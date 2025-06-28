@@ -1,19 +1,17 @@
 package com.act.ecommerce.controller;
 
+import com.act.ecommerce.configuration.OpenRouterConfig;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import okhttp3.*;
 import okhttp3.RequestBody;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSocketFactory;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
+import javax.annotation.PostConstruct;
+import javax.net.ssl.*;
 import java.io.IOException;
 
 @RestController
@@ -22,22 +20,26 @@ public class OpenRouterController {
 
     private static final Logger logger = LoggerFactory.getLogger(OpenRouterController.class);
 
+    private final OpenRouterConfig config;
     private final OkHttpClient client = createUnsafeClient();
 
-    @Value("${openrouter.api.key}")
-    private String apiKey;
+    public OpenRouterController(OpenRouterConfig config) {
+        this.config = config;
+    }
+
+    @PostConstruct
+    public void init() {
+        logger.debug("API key loaded: {}", config.getApiKey() != null ? "yes" : "no");
+    }
 
     @GetMapping("/ask")
     public ResponseEntity<String> getAnswer(@RequestParam(name = "message") String message) {
-        logger.info("Received request: {}", message);
-
-        String apiUrl = "https://openrouter.ai/api/v1/chat/completions";
-        String model = "mistralai/mistral-7b-instruct";
+        logger.info("Received OpenRouter prompt: {}", message);
 
 
-        // Format request body as per OpenRouter spec
+
         String payload = new org.json.JSONObject()
-                .put("model", model)
+                .put("model", config.getModel()) // e.g., openai/gpt-4o
                 .put("messages", new org.json.JSONArray()
                         .put(new org.json.JSONObject()
                                 .put("role", "user")
@@ -45,63 +47,57 @@ public class OpenRouterController {
                 .toString();
 
         Request request = new Request.Builder()
-                .url(apiUrl)
-                .addHeader("Authorization", "Bearer " + apiKey)
+                .url(config.getBaseUrl()) // e.g., https://openrouter.ai/api/v1/chat/completions
+                .addHeader("Authorization", "Bearer " + "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")
                 .addHeader("Content-Type", "application/json")
-                .addHeader("HTTP-Referer", "localhost:9090//")
-                .addHeader("X-Title", "E-Commerce")
+                .addHeader("HTTP-Referer", "http://localhost:9090/") // optional
+                .addHeader("X-Title", "E-Commerce") // optional
                 .post(RequestBody.create(payload, MediaType.parse("application/json")))
                 .build();
 
         try (Response response = client.newCall(request).execute()) {
+            String body = response.body() != null ? response.body().string() : null;
+
             if (!response.isSuccessful()) {
-                logger.error("Request failed with status: {}", response.code());
-                return ResponseEntity
-                        .status(response.code())
-                        .body("{\"error\": \"Failed to get response from OpenRouter API.\"}");
+                logger.error("OpenRouter failed: status={} body={}", response.code(), body);
+                return ResponseEntity.status(response.code())
+                        .body("{\"error\": \"OpenRouter API call failed.\"}");
             }
 
-            String responseBody = response.body().string();
-            JsonObject json = JsonParser.parseString(responseBody).getAsJsonObject();
+            JsonObject json = JsonParser.parseString(body).getAsJsonObject();
             String content = json.getAsJsonArray("choices")
                     .get(0).getAsJsonObject()
                     .getAsJsonObject("message")
                     .get("content").getAsString();
 
-            logger.info("Response from model: {}", content);
+            logger.info("OpenRouter response: {}", content);
             return ResponseEntity.ok(content);
 
         } catch (IOException e) {
-            logger.error("Exception occurred while calling OpenRouter API", e);
-            return ResponseEntity
-                    .status(500)
-                    .body("{\"error\": \"Internal Server Error.\"}");
+            logger.error("Error during OpenRouter API call", e);
+            return ResponseEntity.status(500).body("{\"error\": \"Internal Server Error\"}");
         }
     }
 
-
     private OkHttpClient createUnsafeClient() {
         try {
-            TrustManager[] trustAllCerts = new TrustManager[]{
+            TrustManager[] trustAll = new TrustManager[]{
                     new X509TrustManager() {
-                        public java.security.cert.X509Certificate[] getAcceptedIssuers() { return new java.security.cert.X509Certificate[]{}; }
-                        public void checkClientTrusted(java.security.cert.X509Certificate[] certs, String authType) {}
-                        public void checkServerTrusted(java.security.cert.X509Certificate[] certs, String authType) {}
+                        public void checkClientTrusted(java.security.cert.X509Certificate[] xcs, String s) {}
+                        public void checkServerTrusted(java.security.cert.X509Certificate[] xcs, String s) {}
+                        public java.security.cert.X509Certificate[] getAcceptedIssuers() { return new java.security.cert.X509Certificate[0]; }
                     }
             };
 
             SSLContext sslContext = SSLContext.getInstance("SSL");
-            sslContext.init(null, trustAllCerts, new java.security.SecureRandom());
-            SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
+            sslContext.init(null, trustAll, new java.security.SecureRandom());
 
             return new OkHttpClient.Builder()
-                    .sslSocketFactory(sslSocketFactory, (X509TrustManager) trustAllCerts[0])
-                    .hostnameVerifier((hostname, session) -> true)
+                    .sslSocketFactory(sslContext.getSocketFactory(), (X509TrustManager) trustAll[0])
+                    .hostnameVerifier((host, session) -> true)
                     .build();
-
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Failed to create relaxed SSL client", e);
         }
     }
-
 }
