@@ -44,11 +44,13 @@ public class OpenRouterController {
                         .put(new org.json.JSONObject()
                                 .put("role", "user")
                                 .put("content", message)))
+                .put("max_tokens", 1024) // or something < 3997
+
                 .toString();
 
         Request request = new Request.Builder()
                 .url(config.getBaseUrl()) // e.g., https://openrouter.ai/api/v1/chat/completions
-                .addHeader("Authorization", "Bearer " + "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")
+                .addHeader("Authorization", "Bearer " + "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")
                 .addHeader("Content-Type", "application/json")
                 .addHeader("HTTP-Referer", "http://localhost:9090/") // optional
                 .addHeader("X-Title", "E-Commerce") // optional
