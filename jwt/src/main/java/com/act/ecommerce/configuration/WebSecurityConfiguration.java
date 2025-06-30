@@ -34,7 +34,7 @@ public class WebSecurityConfiguration {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.cors().and().csrf().disable()
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/authenticate","/api/register","/product/all","/api/ollama/ask","/api/openrouter/ask").permitAll() // Allow registration & authentication
+                        .requestMatchers("/authenticate","/api/register","/product/all","/api/ollama/ask","/api/openrouter/ask","/product/{productId}").permitAll() // Allow registration & authentication
 //                        .requestMatchers("/api/forAdmin").hasRole("ADMIN") // Restrict to ROLE_ADMIN
 //                        .requestMatchers("/api/forUser").hasRole("USER") // Restrict to ROLE_USER
                         .anyRequest().authenticated()) // Ensure all other requests require authentication

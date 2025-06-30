@@ -12,6 +12,7 @@ public class Product {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer productId;
     private String productName;
+    @Column(length = 2000) // Assuming description can be long
     private String productDescription;
     private double productDiscountedPrice;
     private double productActualPrice;

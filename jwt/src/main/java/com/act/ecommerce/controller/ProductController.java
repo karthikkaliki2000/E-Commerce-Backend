@@ -68,7 +68,7 @@ public class ProductController {
         return productService.getAllProducts();
     }
 
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
+
     @GetMapping({"/product/{productId}"})
     public Product getProductById(@PathVariable Integer productId) {
         // Logic to retrieve a product by its ID
