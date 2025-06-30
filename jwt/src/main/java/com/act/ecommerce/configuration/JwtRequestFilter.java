@@ -23,6 +23,7 @@ import java.io.IOException;
 @Component
 public class JwtRequestFilter extends OncePerRequestFilter {
 
+    public static String CURRENT_USER = "";
     private static final Logger logger = LoggerFactory.getLogger(JwtRequestFilter.class);
 
     @Autowired
@@ -45,6 +46,7 @@ public class JwtRequestFilter extends OncePerRequestFilter {
 
             try {
                 username = jwtUtil.getUserNameFromToken(jwt);
+                this.CURRENT_USER = username;
 
                 if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                     UserDetails userDetails = jwtService.loadUserByUsername(username);

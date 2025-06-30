@@ -70,7 +70,7 @@ public class ProductController {
 
 
     @GetMapping({"/product/{productId}"})
-    public Product getProductById(@PathVariable Integer productId) {
+    public Product getProductById(@PathVariable Long productId) {
         // Logic to retrieve a product by its ID
         // This could involve fetching the product from a database
         return productService.getProductById(productId);
@@ -78,7 +78,7 @@ public class ProductController {
 
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     @DeleteMapping({"/product/delete/{id}"})
-    public void deleteProductById(@PathVariable Integer id) {
+    public void deleteProductById(@PathVariable Long id) {
         // Logic to delete a product by its ID
         // This could involve removing the product from a database
         productService.deleteProductById(id);
@@ -86,10 +86,23 @@ public class ProductController {
 
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     @PutMapping({"/product/update/{id}"})
-    public Product updateProductById(@PathVariable Integer id, @RequestBody Product product) {
+    public Product updateProductById(@PathVariable Long id, @RequestBody Product product) {
         // Logic to update a product by its ID
         // This could involve updating the product in a database
         return productService.updateProductById(id, product);
+    }
+
+    @PreAuthorize("hasRole('ROLE_USER')")
+    @GetMapping("/product/details/{isSingleProductCheckOut}/{productId}")
+    public List<Product> getProductDetails(
+            @PathVariable(name = "isSingleProductCheckOut") boolean isSingleCheckOut,
+            @PathVariable(name = "productId") Long productId)
+    {
+
+    // Logic to retrieve product details for a single product checkout
+        return productService.getProductDetails(
+                isSingleCheckOut, productId
+        );
     }
 
 }

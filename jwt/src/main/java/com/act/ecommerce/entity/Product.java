@@ -10,7 +10,7 @@ public class Product {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer productId;
+    private Long productId;
     private String productName;
     @Column(length = 2000) // Assuming description can be long
     private String productDescription;
@@ -56,7 +56,7 @@ public class Product {
         // Default constructor
     }
 
-    public Product(Integer productId, String productName, String productDescription, double productDiscountedPrice, double productActualPrice, String productImageUrl) {
+    public Product(Long productId, String productName, String productDescription, double productDiscountedPrice, double productActualPrice, String productImageUrl) {
         this.productId = productId;
         this.productName = productName;
         this.productDescription = productDescription;
@@ -70,11 +70,11 @@ public class Product {
 
 
 
-    public Integer getProductId() {
+    public Long getProductId() {
         return productId;
     }
 
-    public void setProductId(Integer productId) {
+    public void setProductId(Long productId) {
         this.productId = productId;
     }
 
