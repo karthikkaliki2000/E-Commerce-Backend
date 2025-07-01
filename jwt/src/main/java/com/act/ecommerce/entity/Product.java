@@ -1,9 +1,8 @@
 package com.act.ecommerce.entity;
 
 import jakarta.persistence.*;
-
 import java.time.LocalDateTime;
-import java.util.Set;
+import java.util.List;
 
 @Entity
 public class Product {
@@ -11,64 +10,48 @@ public class Product {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long productId;
+
     private String productName;
-    @Column(length = 2000) // Assuming description can be long
+
+    @Column(length = 2000)
     private String productDescription;
+
     private double productDiscountedPrice;
     private double productActualPrice;
 
-
+    @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
+
+    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinTable(
-        name = "product_images",
-        joinColumns = @JoinColumn(name = "product_id"),
-        inverseJoinColumns = @JoinColumn(name = "image_id")
+            name = "product_images",
+            joinColumns = @JoinColumn(name = "product_id"),
+            inverseJoinColumns = @JoinColumn(name = "image_id")
     )
-    private Set<ImageModel> productImages;
+    @OrderBy("id ASC")
+    private List<ImageModel> productImages;
 
-    public Set<ImageModel> getProductImages() {
-        return productImages;
-    }
-
-    public void setProductImages(Set<ImageModel> productImages) {
-        this.productImages = productImages;
-    }
-
-    @PostPersist
-    public void updateTimestamps() {
-        LocalDateTime now = LocalDateTime.now();
-        if (createdAt == null) {
-            createdAt = now;
-        }
-        updatedAt = now;
-    }
-
-    @PreUpdate
-    public void preUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
-
+    // Optional: Bidirectional mapping (if needed)
+     @OneToMany(mappedBy = "product")
+     private List<OrderDetails> orders;
 
     public Product() {
         // Default constructor
     }
 
-    public Product(Long productId, String productName, String productDescription, double productDiscountedPrice, double productActualPrice, String productImageUrl) {
+    public Product(Long productId, String productName, String productDescription,
+                   double productDiscountedPrice, double productActualPrice) {
         this.productId = productId;
         this.productName = productName;
         this.productDescription = productDescription;
         this.productDiscountedPrice = productDiscountedPrice;
         this.productActualPrice = productActualPrice;
-
     }
 
     // Getters and Setters
-
-
-
 
     public Long getProductId() {
         return productId;
@@ -110,11 +93,10 @@ public class Product {
         this.productActualPrice = productActualPrice;
     }
 
-
-
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
+
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
     }
@@ -122,7 +104,42 @@ public class Product {
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
     }
+
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public List<ImageModel> getProductImages() {
+        return productImages;
+    }
+
+    public void setProductImages(List<ImageModel> productImages) {
+        this.productImages = productImages;
+    }
+
+    @PrePersist
+    protected void onCreate() {
+        LocalDateTime now = LocalDateTime.now();
+        createdAt = now;
+        updatedAt = now;
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
+
+    @Override
+    public String toString() {
+        return "Product{" +
+                "productId=" + productId +
+                ", productName='" + productName + '\'' +
+                ", productDescription='" + productDescription + '\'' +
+                ", productDiscountedPrice=" + productDiscountedPrice +
+                ", productActualPrice=" + productActualPrice +
+                ", createdAt=" + createdAt +
+                ", updatedAt=" + updatedAt +
+                ", productImages=" + productImages +
+                '}';
     }
 }

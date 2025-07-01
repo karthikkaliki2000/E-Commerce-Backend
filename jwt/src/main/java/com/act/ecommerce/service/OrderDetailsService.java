@@ -53,6 +53,7 @@ public class OrderDetailsService {
             double totalPrice = product.getProductDiscountedPrice() * item.getQuantity();
 
             OrderDetails order = new OrderDetails(
+
                     orderRequest.getFullName(),
                     orderRequest.getFullAddress(),
                     orderRequest.getEmail(),

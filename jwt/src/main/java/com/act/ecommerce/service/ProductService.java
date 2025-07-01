@@ -69,14 +69,24 @@ public class ProductService {
     }
 
     public Product updateProductById(Long id, Product product) {
-        // Logic to update a product by its ID
-        // This could involve updating the product in a database, etc.
         Product existingProduct = getProductById(id);
         if (existingProduct != null) {
             existingProduct.setProductName(product.getProductName());
             existingProduct.setProductDescription(product.getProductDescription());
             existingProduct.setProductActualPrice(product.getProductActualPrice());
             existingProduct.setProductDiscountedPrice(product.getProductDiscountedPrice());
+
+            // Handle images only if provided in the update request
+            if (product.getProductImages() != null) {
+
+                // Clear existing images if new ones are provided
+            if (existingProduct.getProductImages() != null) {
+                existingProduct.getProductImages().clear();
+            }
+                existingProduct.getProductImages().addAll(product.getProductImages());
+            }
+            // If product.getProductImages() is null, do not change images
+                System.out.println("Updating product with ID: in Service--------------> " + product.getProductImages());
             return productDao.save(existingProduct);
         } else {
             throw new RuntimeException("Product not found with id: " + id);

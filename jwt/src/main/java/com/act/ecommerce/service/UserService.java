@@ -80,13 +80,29 @@ public class UserService {
         adminUser.setUserLastName("User");
         adminUser.setUserPassword(passwordEncoder.encode("admin123"));
         adminUser.setRoles(Set.of(adminRole));
-
         if (!userDao.existsById(adminUser.getUserName())) {
             userDao.save(adminUser);
             logger.info("Admin user created successfully.");
         } else {
             logger.warn("Admin user already exists, skipping creation.");
         }
+
+        User normalUser= new User();
+        normalUser.setUserName("Karthik");
+        normalUser.setUserFirstName("Karthik");
+        normalUser.setUserLastName("Kaliki");
+        normalUser.setUserPassword(passwordEncoder.encode("Karthik@123"));
+        normalUser.setRoles(Set.of(userRole));
+        // Save normal user
+        if (!userDao.existsById(normalUser.getUserName())) {
+            userDao.save(normalUser);
+            logger.info("Normal user created successfully.");
+        } else {
+            logger.warn("Normal user already exists, skipping creation.");
+        }
+
+
+
     }
 
     private Role saveRole(String roleName, String description) {
