@@ -3,6 +3,9 @@ package com.act.ecommerce.service;
 import com.act.ecommerce.dao.ProductDao;
 import com.act.ecommerce.entity.Product;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -45,11 +48,41 @@ public class ProductService {
 
     }
 
-    public List<Product> getAllProducts() {
-        // Logic to retrieve all products
-        // This could involve fetching products from a database, etc.
-        return productDao.findAll();
+    public List<Product> getAllProducts(int pageNumber, int pageSize, String searchKey) {
+        Pageable pageable = PageRequest.of(pageNumber, pageSize);
+
+        Page<Product> productPage;
+        List<Product> products;
+
+        boolean hasSearch = searchKey != null && !searchKey.trim().isEmpty();
+
+        if (hasSearch) {
+            String search = searchKey.trim().toLowerCase();
+            productPage = productDao.findByProductNameContainingIgnoreCaseOrProductDescriptionContainingIgnoreCase(
+                    search, search, pageable);
+        } else {
+            productPage = productDao.findAll(pageable);
+        }
+
+        products = productPage.getContent();
+       // logPaginationMetadata(productPage);
+        System.out.println("Response from ProductService: " + products.toArray().length);
+        return products;
     }
+
+    private void logPaginationMetadata(Page<Product> page) {
+        if (page.isEmpty()) {
+            System.out.println("No products found in the catalog.");
+        } else {
+            System.out.printf("📦 Total: %d | Pages: %d | Current: %d | PageSize: %d%n",
+                    page.getTotalElements(),
+                    page.getTotalPages(),
+                    page.getNumber(),
+                    page.getSize());
+        }
+    }
+
+
 
     public Product getProductById(Long id) {
         // Logic to retrieve a product by its ID

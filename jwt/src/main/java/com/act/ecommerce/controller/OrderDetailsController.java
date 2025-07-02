@@ -11,6 +11,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Collections;
+import java.util.Map;
+
 @RestController
 @RequestMapping("/order")
 public class OrderDetailsController {
@@ -22,21 +25,23 @@ public class OrderDetailsController {
 
     @PreAuthorize("hasRole('ROLE_USER')")
     @PostMapping("/place")
-    public ResponseEntity<String> placeOrder(@RequestBody OrderRequest orderRequest) {
+    public ResponseEntity<Map<String, String>> placeOrder(@RequestBody OrderRequest orderRequest) {
         try {
             orderDetailsService.placeOrder(orderRequest);
             return ResponseEntity.status(HttpStatus.CREATED)
-                    .body("Order placed successfully");
+                    .body(Collections.singletonMap("message", "Order placed successfully"));
         } catch (IllegalArgumentException e) {
             logger.warn("Validation failed: {}", e.getMessage());
-            return ResponseEntity.badRequest().body("Invalid order request: " + e.getMessage());
+            return ResponseEntity.badRequest()
+                    .body(Collections.singletonMap("error", "Invalid order request: " + e.getMessage()));
         } catch (EntityNotFoundException e) {
             logger.error("Entity not found: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Error: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Collections.singletonMap("error", "Error: " + e.getMessage()));
         } catch (Exception e) {
             logger.error("Unhandled error while placing order", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("An unexpected error occurred");
+                    .body(Collections.singletonMap("error", "An unexpected error occurred"));
         }
     }
 }

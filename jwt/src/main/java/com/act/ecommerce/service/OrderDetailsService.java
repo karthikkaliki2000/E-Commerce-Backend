@@ -69,7 +69,7 @@ public class OrderDetailsService {
             logger.info("Saved order for product ID: {} with quantity: {}", item.getProductId(), item.getQuantity());
         }
 
-        logger.info("Order placed successfully with {} products for user '{}'.", orderProductQuantityList.size(), currentUser);
+        logger.info("Order placed successfully with productId {} for user '{}'.", orderProductQuantityList.size(), currentUser);
     }
 
     private void validateOrderRequest(OrderRequest orderRequest) {

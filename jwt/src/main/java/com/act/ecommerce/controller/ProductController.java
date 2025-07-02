@@ -10,6 +10,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.awt.print.Pageable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -54,10 +55,16 @@ public class ProductController {
         return imageModels;
     }
 
-    @GetMapping({"/product/all"})
-    public List<Product> getAllProducts() {
-        return productService.getAllProducts();
+    @GetMapping("/product/all")
+    public List<Product> getAllProducts(
+            @RequestParam(defaultValue = "0") int pageNumber,
+            @RequestParam(defaultValue = "12") int pageSize,
+            @RequestParam(defaultValue = "") String searchKey) {
+
+
+        return productService.getAllProducts(pageNumber,pageSize, searchKey);
     }
+
 
     @GetMapping({"/product/{productId}"})
     public Product getProductById(@PathVariable Long productId) {
