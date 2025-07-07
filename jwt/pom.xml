@@ -104,6 +104,18 @@
 			<version>1.0.0-M6</version>
 		</dependency>
 
+		<!-- Spring Boot Starter Web -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-web</artifactId>
+		</dependency>
+		<!-- Spring Boot Starter Cache -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-cache</artifactId>
+		</dependency>
+
+
 		<!-- Google GenAI SDK -->
 		<dependency>
 			<groupId>com.google.genai</groupId>
