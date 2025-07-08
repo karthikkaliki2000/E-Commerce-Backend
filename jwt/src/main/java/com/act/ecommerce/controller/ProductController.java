@@ -92,10 +92,15 @@ public class ProductController {
     }
 
     @PreAuthorize("hasRole('ROLE_USER')")
-    @GetMapping("/product/details/{isSingleProductCheckOut}/{productId}")
+    @GetMapping("/product/details")
     public List<Product> getProductDetails(
-            @PathVariable(name = "isSingleProductCheckOut") boolean isSingleCheckOut,
-            @PathVariable(name = "productId") Long productId) {
-        return productService.getProductDetails(isSingleCheckOut, productId);
+            @RequestParam boolean isSingleProductCheckOut,
+            @RequestParam(required = false) Long productId) {
+
+
+
+
+        return productService.getProductDetails(isSingleProductCheckOut, productId);
     }
+
 }

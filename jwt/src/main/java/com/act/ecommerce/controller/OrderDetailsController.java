@@ -1,6 +1,7 @@
 package com.act.ecommerce.controller;
 
 import com.act.ecommerce.entity.OrderRequest;
+import com.act.ecommerce.entity.OrderResponse;
 import com.act.ecommerce.service.OrderDetailsService;
 import jakarta.persistence.EntityNotFoundException;
 import org.slf4j.Logger;
@@ -12,6 +13,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -43,5 +45,21 @@ public class OrderDetailsController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Collections.singletonMap("error", "An unexpected error occurred"));
         }
+    }
+
+    @PreAuthorize("hasRole('ROLE_USER')")
+    @GetMapping("/history")
+    public ResponseEntity<List<OrderResponse>> getOrderHistory() {
+        List<OrderResponse> response = orderDetailsService.getOrderHistory();
+        return response.isEmpty()
+                ? ResponseEntity.noContent().build()
+                : ResponseEntity.ok(response);
+    }
+
+    @PreAuthorize("hasRole('ROLE_USER')")
+    @GetMapping("/{orderId}")
+    public ResponseEntity<OrderResponse> getOrderById(@PathVariable Long orderId) {
+        OrderResponse response = orderDetailsService.getOrderById(orderId);
+        return ResponseEntity.ok(response);
     }
 }

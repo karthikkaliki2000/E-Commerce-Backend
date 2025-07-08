@@ -10,66 +10,71 @@ import com.act.ecommerce.entity.User;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 
 @Service
 public class CartService {
 
-    @Autowired
-    CartDao cartDao;
-
-    @Autowired
-    ProductDao productDao;
-
-    @Autowired
-    JwtRequestFilter jwtRequestFilter;
-
-    @Autowired
-    UserDao userDao;
-
-    private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(CartService.class);
+    @Autowired private CartDao cartDao;
+    @Autowired private ProductDao productDao;
+    @Autowired private UserDao userDao;
+    @Autowired private JwtRequestFilter jwtRequestFilter;
 
     public Cart addToCart(Long productId, int quantity) {
-
-        //if cart is not exists then create a new cart
-
-
-        Product product = productDao.findById(productId).orElseThrow(() -> new IllegalArgumentException("Product not found with ID: " + productId));
-
-        logger.info("Adding product to cart: " + product.getProductName());
         String currentUser = jwtRequestFilter.CURRENT_USER;
-        if (currentUser == null || currentUser.isEmpty()) {
-            throw new IllegalArgumentException("Current user is not authenticated");
+        if (currentUser == null || currentUser.isBlank()) {
+            throw new IllegalArgumentException("User not authenticated");
+        }
+        Product product = productDao.findById(productId)
+                .orElseThrow(() -> new IllegalArgumentException("Product not found with ID: " + productId));
+        User user = userDao.findById(currentUser)
+                .orElseThrow(() -> new EntityNotFoundException("User not found: " + currentUser));
+        Optional<Cart> existingCartOpt = Optional.ofNullable(cartDao.findByUserAndProduct(user, product));
+        Cart cart = existingCartOpt.orElse(new Cart(product, user, quantity));
+        if (existingCartOpt.isPresent()) {
+            cart.setQuantity(quantity);
+        }
+        return cartDao.save(cart);
+    }
+
+    public List<Cart> getCartDetails() {
+        String currentUser = jwtRequestFilter.CURRENT_USER;
+        if (currentUser == null || currentUser.isBlank()) {
+            throw new IllegalArgumentException("User not authenticated");
         }
         User user = userDao.findById(currentUser)
-                .orElseThrow(() -> new EntityNotFoundException("User not found with username: " + currentUser));
-
-
-        Cart existingCart = cartDao.findByUserAndProduct(user, product);
-        if (existingCart != null) {
-            // If the product already exists in the cart, update the quantity
-            existingCart.setQuantity(quantity);
-            return cartDao.save(existingCart);
+                .orElseThrow(() -> new EntityNotFoundException("User not found: " + currentUser));
+        List<Cart> cartList = cartDao.findByUser(user);
+        if (cartList == null || cartList.isEmpty()) {
+            return Collections.emptyList();
         }
-        // Logic to add the product to the user's cart
-        if(product!=null && user!=null) {
-            // Assuming CartDao has a method to add product to user's cart
+        return cartList;
+    }
+
+    public void removeCartItem(Long cartId) {
+        cartDao.deleteById(cartId);
+    }
+
+    public Cart updateCartItemQuantity(Long cartId, int quantity) {
+        Cart cart = cartDao.findById(cartId)
+                .orElseThrow(() -> new EntityNotFoundException("Cart not found"));
+        cart.setQuantity(quantity);
+        return cartDao.save(cart);
+    }
 
 
-            Cart cart=new Cart(
-                    product,
-                    user,
-                    quantity
-            );
-
-
-            return cartDao.save(cart);
-        } else {
-            throw new IllegalArgumentException("Invalid product or user");
+    @Transactional
+    public void clearCart() {
+        String currentUser = jwtRequestFilter.CURRENT_USER;
+        if (currentUser == null || currentUser.isBlank()) {
+            throw new IllegalArgumentException("User not authenticated");
         }
-
-
-
-
-
+        User user = userDao.findById(currentUser)
+                .orElseThrow(() -> new EntityNotFoundException("User not found: " + currentUser));
+        cartDao.deleteByUser(user);
     }
 }

@@ -6,7 +6,11 @@ import com.act.ecommerce.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 @Repository
-public interface CartDao extends JpaRepository<Cart,Long> {
+public interface CartDao extends JpaRepository<Cart, Long> {
     Cart findByUserAndProduct(User user, Product product);
+    List<Cart> findByUser(User user);
+    void deleteByUser(User user);
 }

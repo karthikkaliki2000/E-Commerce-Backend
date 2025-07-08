@@ -2,6 +2,8 @@ package com.act.ecommerce.entity;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 public class OrderDetails {
@@ -18,9 +20,14 @@ public class OrderDetails {
     private String orderStatus;
     private Double orderTotalPrice;
 
-    @ManyToOne
-    @JoinColumn(name = "product_product_id")
-    private Product product;
+    @ManyToMany
+    @JoinTable(
+            name = "order_products",
+            joinColumns = @JoinColumn(name = "order_id"),
+            inverseJoinColumns = @JoinColumn(name = "product_id")
+    )
+    private List<Product> products = new ArrayList<>();
+
 
     @ManyToOne
     @JoinColumn(name = "user_user_name")
@@ -47,10 +54,10 @@ public class OrderDetails {
     // Constructors
     public OrderDetails() {}
 
+
     public OrderDetails(String orderFullName, String orderFullAddress, String orderEmail,
                         String orderPhoneNumber, String orderAlternativePhoneNumber,
-                        String orderStatus, Double orderTotalPrice,
-                        Product product, User user) {
+                        String orderStatus, Double orderTotalPrice, User user) {
         this.orderFullName = orderFullName;
         this.orderFullAddress = orderFullAddress;
         this.orderEmail = orderEmail;
@@ -58,18 +65,40 @@ public class OrderDetails {
         this.orderAlternativePhoneNumber = orderAlternativePhoneNumber;
         this.orderStatus = orderStatus;
         this.orderTotalPrice = orderTotalPrice;
-        this.product = product;
+        this.user = user;
+    }
+
+    public OrderDetails(String orderFullName, String orderFullAddress, String orderEmail,
+                        String orderPhoneNumber, String orderAlternativePhoneNumber,
+                        String orderStatus, Double orderTotalPrice, List<Product> products, User user) {
+        this.orderFullName = orderFullName;
+        this.orderFullAddress = orderFullAddress;
+        this.orderEmail = orderEmail;
+        this.orderPhoneNumber = orderPhoneNumber;
+        this.orderAlternativePhoneNumber = orderAlternativePhoneNumber;
+        this.orderStatus = orderStatus;
+        this.orderTotalPrice = orderTotalPrice;
+        this.products = products;
         this.user = user;
     }
 
     public OrderDetails(Long orderId, String orderFullName, String orderFullAddress, String orderEmail,
                         String orderPhoneNumber, String orderAlternativePhoneNumber,
-                        String orderStatus, Double orderTotalPrice,
-                        Product product, User user) {
-        this(orderFullName, orderFullAddress, orderEmail, orderPhoneNumber,
-                orderAlternativePhoneNumber, orderStatus, orderTotalPrice, product, user);
+                        String orderStatus, Double orderTotalPrice, List<Product> products, User user) {
         this.orderId = orderId;
+        this.orderFullName = orderFullName;
+        this.orderFullAddress = orderFullAddress;
+        this.orderEmail = orderEmail;
+        this.orderPhoneNumber = orderPhoneNumber;
+        this.orderAlternativePhoneNumber = orderAlternativePhoneNumber;
+        this.orderStatus = orderStatus;
+        this.orderTotalPrice = orderTotalPrice;
+        this.products = products;
+        this.user = user;
     }
+
+
+
 
     // Getters and Setters
 
@@ -137,12 +166,13 @@ public class OrderDetails {
         this.orderTotalPrice = orderTotalPrice;
     }
 
-    public Product getProduct() {
-        return product;
+
+    public List<Product> getProducts() {
+        return products;
     }
 
-    public void setProduct(Product product) {
-        this.product = product;
+    public void setProducts(List<Product> products) {
+        this.products = products;
     }
 
     public User getUser() {
@@ -161,6 +191,9 @@ public class OrderDetails {
         return updatedAt;
     }
 
+
+
+
     @Override
     public String toString() {
         return "OrderDetails{" +
@@ -172,7 +205,7 @@ public class OrderDetails {
                 ", orderAlternativePhoneNumber='" + orderAlternativePhoneNumber + '\'' +
                 ", orderStatus='" + orderStatus + '\'' +
                 ", orderTotalPrice=" + orderTotalPrice +
-                ", product=" + product +
+                ", products=" + products +
                 ", user=" + user +
                 ", createdAt=" + createdAt +
                 ", updatedAt=" + updatedAt +

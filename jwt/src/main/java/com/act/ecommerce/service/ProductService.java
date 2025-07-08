@@ -1,15 +1,20 @@
 package com.act.ecommerce.service;
 
+import com.act.ecommerce.configuration.JwtRequestFilter;
+import com.act.ecommerce.dao.CartDao;
 import com.act.ecommerce.dao.ProductDao;
+import com.act.ecommerce.dao.UserDao;
+import com.act.ecommerce.entity.Cart;
 import com.act.ecommerce.entity.Product;
+import com.act.ecommerce.entity.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -17,6 +22,17 @@ public class ProductService {
 
     @Autowired
     private ProductDao productDao;
+
+    @Autowired
+    private JwtRequestFilter jwtRequestFilter;
+
+    private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(ProductService.class);
+
+    @Autowired
+    private UserDao userDao;
+
+    @Autowired
+    private CartDao cartDao;
 
     public String getAllProductSummaries() {
         List<Product> products = productDao.findAll();
@@ -34,10 +50,6 @@ public class ProductService {
                 )
                 .collect(Collectors.joining("\n"));
     }
-
-
-
-
 
 
     public Product addNewProduct(Product product) {
@@ -65,7 +77,7 @@ public class ProductService {
         }
 
         products = productPage.getContent();
-       // logPaginationMetadata(productPage);
+        // logPaginationMetadata(productPage);
         System.out.println("Response from ProductService: " + products.toArray().length);
         return products;
     }
@@ -81,7 +93,6 @@ public class ProductService {
                     page.getSize());
         }
     }
-
 
 
     public Product getProductById(Long id) {
@@ -113,34 +124,69 @@ public class ProductService {
             if (product.getProductImages() != null) {
 
                 // Clear existing images if new ones are provided
-            if (existingProduct.getProductImages() != null) {
-                existingProduct.getProductImages().clear();
-            }
+                if (existingProduct.getProductImages() != null) {
+                    existingProduct.getProductImages().clear();
+                }
                 existingProduct.getProductImages().addAll(product.getProductImages());
             }
             // If product.getProductImages() is null, do not change images
-                System.out.println("Updating product with ID: in Service--------------> " + product.getProductImages());
+            System.out.println("Updating product with ID: in Service--------------> " + product.getProductImages());
             return productDao.save(existingProduct);
         } else {
             throw new RuntimeException("Product not found with id: " + id);
         }
     }
 
-    public List<Product> getProductDetails(boolean isSingleProductCheckOut, Long productId){
-        if (isSingleProductCheckOut) {
-         //we are going to buy a single product
-            List<Product> list=new ArrayList<>();
-            Product product = getProductById(productId);
-            if (product != null) {
-                list.add(product);
-                System.out.println("Product Details: " + product);
-            } else {
-                System.out.println("Product not found with id: " + productId);
-            }
-            return list;
-        } else {
-           //we are going to checkout entire cart
+    public List<Product> getProductDetails(boolean isSingleProductCheckOut, Long productId) {
+        if (isSingleProductCheckOut && productId != null && productId > 0L) {
+
+            return getSingleProductDetails(productId);
         }
-        return new ArrayList<>(); // Return an empty list if no products are found
+        else{
+
+            return getCartProductDetails();
+        }
+
     }
+
+    private List<Product> getSingleProductDetails(Long productId) {
+
+
+        Product product = getProductById(productId);
+        if (Objects.nonNull(product)) {
+
+            List<Product> productList = new ArrayList<>();
+            productList.add(product);
+            return productList;
+        }
+
+
+        return Collections.emptyList();
+    }
+
+    private List<Product> getCartProductDetails() {
+        String currentUser = jwtRequestFilter.CURRENT_USER;
+
+        if (currentUser == null || currentUser.isBlank()) {
+
+            throw new IllegalArgumentException("Current user is not authenticated 172");
+        }
+
+        User user = userDao.findById(currentUser)
+                .orElseThrow(() -> new RuntimeException("User not found with username:  176" + currentUser));
+
+        List<Cart> cartList = cartDao.findByUser(user);
+
+        if (cartList == null || cartList.isEmpty()) {
+
+            return Collections.emptyList();
+        }
+
+
+        return cartList.stream()
+                .map(Cart::getProduct)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+    }
+
 }

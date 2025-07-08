@@ -1,10 +1,12 @@
 package com.act.ecommerce.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Product {
 
     @Id
@@ -34,13 +36,12 @@ public class Product {
     @OrderBy("id ASC")
     private List<ImageModel> productImages;
 
-    // Optional: Bidirectional mapping (if needed)
-     @OneToMany(mappedBy = "product")
-     private List<OrderDetails> orders;
+    @ManyToMany(mappedBy = "products", fetch = FetchType.LAZY)
+    @JsonIgnoreProperties("products")
+    private List<OrderDetails> orders;
 
-    public Product() {
-        // Default constructor
-    }
+    // Constructors
+    public Product() {}
 
     public Product(Long productId, String productName, String productDescription,
                    double productDiscountedPrice, double productActualPrice) {
@@ -52,7 +53,6 @@ public class Product {
     }
 
     // Getters and Setters
-
     public Long getProductId() {
         return productId;
     }
@@ -117,6 +117,15 @@ public class Product {
         this.productImages = productImages;
     }
 
+    public List<OrderDetails> getOrders() {
+        return orders;
+    }
+
+    public void setOrders(List<OrderDetails> orders) {
+        this.orders = orders;
+    }
+
+    // Timestamps
     @PrePersist
     protected void onCreate() {
         LocalDateTime now = LocalDateTime.now();
