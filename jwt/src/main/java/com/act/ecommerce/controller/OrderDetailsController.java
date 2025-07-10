@@ -26,10 +26,10 @@ public class OrderDetailsController {
     private OrderDetailsService orderDetailsService;
 
     @PreAuthorize("hasRole('ROLE_USER')")
-    @PostMapping("/place")
-    public ResponseEntity<Map<String, String>> placeOrder(@RequestBody OrderRequest orderRequest) {
+    @PostMapping("/place/{isSingleProductCheckout}")
+    public ResponseEntity<Map<String, String>> placeOrder(@PathVariable(name = "isSingleProductCheckout") boolean isSingleProductCheckout,@RequestBody OrderRequest orderRequest) {
         try {
-            orderDetailsService.placeOrder(orderRequest);
+            orderDetailsService.placeOrder(orderRequest, isSingleProductCheckout);
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(Collections.singletonMap("message", "Order placed successfully"));
         } catch (IllegalArgumentException e) {
@@ -62,4 +62,40 @@ public class OrderDetailsController {
         OrderResponse response = orderDetailsService.getOrderById(orderId);
         return ResponseEntity.ok(response);
     }
+
+    @PreAuthorize("hasRole('ROLE_USER')")
+    @GetMapping({"getOrderDetails", "getOrderDetails/{orderId}"})
+    public ResponseEntity<List<OrderResponse>> getOrderDetails(@PathVariable(required = false) Long orderId) {
+        List<OrderResponse> response;
+        if (orderId != null) {
+            OrderResponse orderResponse = orderDetailsService.getOrderById(orderId);
+            response = Collections.singletonList(orderResponse);
+        } else {
+            response = orderDetailsService.getOrderHistory();
+        }
+        return response.isEmpty()
+                ? ResponseEntity.noContent().build()
+                : ResponseEntity.ok(response);
+    }
+
+    //all my orders
+
+    @PreAuthorize("hasRole('ROLE_USER')")
+    @GetMapping("/myOrders")
+    public ResponseEntity<List<OrderResponse>> getMyOrders() {
+        List<OrderResponse> response = orderDetailsService.getOrderHistory();
+        return response.isEmpty()
+                ? ResponseEntity.noContent().build()
+                : ResponseEntity.ok(response);
+    }
+
+
+
+    @PreAuthorize("hasRole('ROLE_USER')")
+    @PostMapping("/cancelOrder/{orderId}")
+    public ResponseEntity<?> cancelOrder(@PathVariable Long orderId) {
+        orderDetailsService.cancelOrder(orderId);
+        return ResponseEntity.ok("Order cancelled successfully");
+    }
+
 }

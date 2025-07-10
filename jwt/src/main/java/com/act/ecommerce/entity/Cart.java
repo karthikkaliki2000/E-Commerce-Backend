@@ -1,5 +1,6 @@
 package com.act.ecommerce.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
@@ -23,6 +24,7 @@ public class Cart {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+    @JsonIgnore
     private User user;
 
     // Cart properties

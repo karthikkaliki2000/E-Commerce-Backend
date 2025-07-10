@@ -3,9 +3,11 @@ package com.act.ecommerce.controller;
 import com.act.ecommerce.entity.ImageModel;
 import com.act.ecommerce.entity.Product;
 import com.act.ecommerce.service.ProductService;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -20,6 +22,9 @@ public class ProductController {
 
     @Autowired
     private ProductService productService;
+
+    @Autowired
+    private com.act.ecommerce.dao.ProductDao productDao;
 
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     @PostMapping(value = {"/product/add"}, consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
@@ -101,6 +106,21 @@ public class ProductController {
 
 
         return productService.getProductDetails(isSingleProductCheckOut, productId);
+    }
+
+
+    @PreAuthorize("hasRole('ROLE_USER')")
+    @GetMapping("/api/product/{productId}/main-image")
+    public ResponseEntity<byte[]> getMainProductImage(@PathVariable Long productId) {
+        Product product = productDao.findById(productId)
+                .orElseThrow(() -> new EntityNotFoundException("Product not found"));
+        if (product.getProductImages() == null || product.getProductImages().isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        ImageModel mainImage = product.getProductImages().get(0);
+        return ResponseEntity.ok()
+                .contentType(MediaType.IMAGE_JPEG) // or detect type
+                .body(mainImage.getPicBytes());
     }
 
 }

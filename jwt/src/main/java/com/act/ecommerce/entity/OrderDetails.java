@@ -28,6 +28,9 @@ public class OrderDetails {
     )
     private List<Product> products = new ArrayList<>();
 
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
+    private List<OrderItem> items = new ArrayList<>();
+
 
     @ManyToOne
     @JoinColumn(name = "user_user_name")
@@ -38,6 +41,17 @@ public class OrderDetails {
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    public OrderDetails(String fullName, String fullAddress, String email, String contactNumber, String alternativeContactNumber, String placed, double totalOrderPrice, User user) {
+        this.orderFullName = fullName;
+        this.orderFullAddress = fullAddress;
+        this.orderEmail = email;
+        this.orderPhoneNumber = contactNumber;
+        this.orderAlternativePhoneNumber = alternativeContactNumber;
+        this.orderStatus = placed;
+        this.orderTotalPrice = totalOrderPrice;
+        this.user = user;
+    }
 
     @PrePersist
     protected void onCreate() {
@@ -52,25 +66,13 @@ public class OrderDetails {
     }
 
     // Constructors
-    public OrderDetails() {}
 
 
-    public OrderDetails(String orderFullName, String orderFullAddress, String orderEmail,
-                        String orderPhoneNumber, String orderAlternativePhoneNumber,
-                        String orderStatus, Double orderTotalPrice, User user) {
-        this.orderFullName = orderFullName;
-        this.orderFullAddress = orderFullAddress;
-        this.orderEmail = orderEmail;
-        this.orderPhoneNumber = orderPhoneNumber;
-        this.orderAlternativePhoneNumber = orderAlternativePhoneNumber;
-        this.orderStatus = orderStatus;
-        this.orderTotalPrice = orderTotalPrice;
-        this.user = user;
+    public OrderDetails() {
     }
-
     public OrderDetails(String orderFullName, String orderFullAddress, String orderEmail,
-                        String orderPhoneNumber, String orderAlternativePhoneNumber,
-                        String orderStatus, Double orderTotalPrice, List<Product> products, User user) {
+                        String orderPhoneNumber, String orderAlternativePhoneNumber, String orderStatus,
+                        Double orderTotalPrice, List<Product> products, User user) {
         this.orderFullName = orderFullName;
         this.orderFullAddress = orderFullAddress;
         this.orderEmail = orderEmail;
@@ -81,25 +83,6 @@ public class OrderDetails {
         this.products = products;
         this.user = user;
     }
-
-    public OrderDetails(Long orderId, String orderFullName, String orderFullAddress, String orderEmail,
-                        String orderPhoneNumber, String orderAlternativePhoneNumber,
-                        String orderStatus, Double orderTotalPrice, List<Product> products, User user) {
-        this.orderId = orderId;
-        this.orderFullName = orderFullName;
-        this.orderFullAddress = orderFullAddress;
-        this.orderEmail = orderEmail;
-        this.orderPhoneNumber = orderPhoneNumber;
-        this.orderAlternativePhoneNumber = orderAlternativePhoneNumber;
-        this.orderStatus = orderStatus;
-        this.orderTotalPrice = orderTotalPrice;
-        this.products = products;
-        this.user = user;
-    }
-
-
-
-
     // Getters and Setters
 
     public Long getOrderId() {
@@ -109,6 +92,8 @@ public class OrderDetails {
     public void setOrderId(Long orderId) {
         this.orderId = orderId;
     }
+
+
 
     public String getOrderFullName() {
         return orderFullName;
@@ -189,6 +174,13 @@ public class OrderDetails {
 
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
+    }
+
+    public List<OrderItem> getItems() {
+        return items;
+    }
+    public void setItems(List<OrderItem> items) {
+        this.items = items;
     }
 
 

@@ -6,9 +6,12 @@ public class ProductSummary {
     private String productName;
     private Integer quantity;
     private Double unitPrice;
+    private String productImageUrl;
 
     // Default constructor
     public ProductSummary() {}
+
+
 
     // Parameterized constructor
     public ProductSummary(Long productId, String productName, Integer quantity, Double unitPrice) {
@@ -16,6 +19,15 @@ public class ProductSummary {
         this.productName = productName;
         this.quantity = quantity;
         this.unitPrice = unitPrice;
+    }
+
+    // Parameterized constructor with image URL
+    public ProductSummary(Long productId, String productName, Integer quantity, Double unitPrice, String productImageUrl) {
+        this.productId = productId;
+        this.productName = productName;
+        this.quantity = quantity;
+        this.unitPrice = unitPrice;
+        this.productImageUrl = productImageUrl;
     }
 
     // Getters and setters
@@ -49,6 +61,13 @@ public class ProductSummary {
 
     public void setUnitPrice(Double unitPrice) {
         this.unitPrice = unitPrice;
+    }
+
+    public String getProductImageUrl() {
+        return productImageUrl;
+    }
+    public void setProductImageUrl(String productImageUrl) {
+        this.productImageUrl = productImageUrl;
     }
 
     // Optional: toString for logging
