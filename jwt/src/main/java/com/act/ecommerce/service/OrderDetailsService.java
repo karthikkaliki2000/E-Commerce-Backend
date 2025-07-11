@@ -175,4 +175,14 @@ public class OrderDetailsService {
         order.setOrderStatus("Order Cancelled");
         orderDetailsDao.save(order);
     }
+
+    public List<OrderResponse> getAllOrders() {
+        List<OrderDetails> orders = orderDetailsDao.findAll();
+        if (orders.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return orders.stream()
+                .map(this::mapToOrderResponse)
+                .collect(Collectors.toList());
+    }
 }

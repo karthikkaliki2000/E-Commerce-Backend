@@ -89,6 +89,19 @@ public class OrderDetailsController {
                 : ResponseEntity.ok(response);
     }
 
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @GetMapping("/allOrders")
+    public ResponseEntity<List<OrderResponse>> getAllOrders() {
+
+
+        List<OrderResponse> response = orderDetailsService.getAllOrders();
+        return response.isEmpty()
+                ? ResponseEntity.noContent().build()
+                : ResponseEntity.ok(response);
+    }
+
+
+
 
 
     @PreAuthorize("hasRole('ROLE_USER')")
