@@ -27,7 +27,9 @@ public class OrderDetailsController {
 
     @PreAuthorize("hasRole('ROLE_USER')")
     @PostMapping("/place/{isSingleProductCheckout}")
-    public ResponseEntity<Map<String, String>> placeOrder(@PathVariable(name = "isSingleProductCheckout") boolean isSingleProductCheckout,@RequestBody OrderRequest orderRequest) {
+    public ResponseEntity<Map<String, String>> placeOrder(
+            @PathVariable(name = "isSingleProductCheckout") boolean isSingleProductCheckout,
+            @RequestBody OrderRequest orderRequest) {
         try {
             orderDetailsService.placeOrder(orderRequest, isSingleProductCheckout);
             return ResponseEntity.status(HttpStatus.CREATED)
@@ -49,8 +51,11 @@ public class OrderDetailsController {
 
     @PreAuthorize("hasRole('ROLE_USER')")
     @GetMapping("/history")
-    public ResponseEntity<List<OrderResponse>> getOrderHistory() {
-        List<OrderResponse> response = orderDetailsService.getOrderHistory();
+    public ResponseEntity<List<OrderResponse>> getOrderHistory(
+            @RequestParam(value = "status", required = false) String status) {
+        List<OrderResponse> response = (status == null || status.isEmpty())
+                ? orderDetailsService.getOrderHistory()
+                : orderDetailsService.getOrderHistoryByStatus(status);
         return response.isEmpty()
                 ? ResponseEntity.noContent().build()
                 : ResponseEntity.ok(response);
@@ -63,13 +68,17 @@ public class OrderDetailsController {
         return ResponseEntity.ok(response);
     }
 
-    @PreAuthorize("hasRole('ROLE_USER')")
+    @PreAuthorize("hasAnyRole('ROLE_USER', 'ROLE_ADMIN')")
     @GetMapping({"getOrderDetails", "getOrderDetails/{orderId}"})
-    public ResponseEntity<List<OrderResponse>> getOrderDetails(@PathVariable(required = false) Long orderId) {
+    public ResponseEntity<List<OrderResponse>> getOrderDetails(
+            @PathVariable(required = false) Long orderId,
+            @RequestParam(value = "status", required = false) String status) {
         List<OrderResponse> response;
         if (orderId != null) {
             OrderResponse orderResponse = orderDetailsService.getOrderById(orderId);
             response = Collections.singletonList(orderResponse);
+        } else if (status != null && !status.isEmpty()) {
+            response = orderDetailsService.getOrderHistoryByStatus(status);
         } else {
             response = orderDetailsService.getOrderHistory();
         }
@@ -78,12 +87,14 @@ public class OrderDetailsController {
                 : ResponseEntity.ok(response);
     }
 
-    //all my orders
-
+    // all my orders
     @PreAuthorize("hasRole('ROLE_USER')")
     @GetMapping("/myOrders")
-    public ResponseEntity<List<OrderResponse>> getMyOrders() {
-        List<OrderResponse> response = orderDetailsService.getOrderHistory();
+    public ResponseEntity<List<OrderResponse>> getMyOrders(
+            @RequestParam(value = "status", required = false) String status) {
+        List<OrderResponse> response = (status == null || status.isEmpty())
+                ? orderDetailsService.getOrderHistory()
+                : orderDetailsService.getOrderHistoryByStatus(status);
         return response.isEmpty()
                 ? ResponseEntity.noContent().build()
                 : ResponseEntity.ok(response);
@@ -91,18 +102,15 @@ public class OrderDetailsController {
 
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     @GetMapping("/allOrders")
-    public ResponseEntity<List<OrderResponse>> getAllOrders() {
-
-
-        List<OrderResponse> response = orderDetailsService.getAllOrders();
+    public ResponseEntity<List<OrderResponse>> getAllOrders(
+            @RequestParam(value = "status", required = false) String status) {
+        List<OrderResponse> response = (status == null || status.isEmpty())
+                ? orderDetailsService.getAllOrders()
+                : orderDetailsService.getAllOrdersByStatus(status);
         return response.isEmpty()
                 ? ResponseEntity.noContent().build()
                 : ResponseEntity.ok(response);
     }
-
-
-
-
 
     @PreAuthorize("hasRole('ROLE_USER')")
     @PostMapping("/cancelOrder/{orderId}")
@@ -111,4 +119,17 @@ public class OrderDetailsController {
         return ResponseEntity.ok("Order cancelled successfully");
     }
 
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @GetMapping("/markOrderAsDelivered/{orderId}")
+    public ResponseEntity<?> markOrderAsDelivered(@PathVariable Long orderId) {
+        orderDetailsService.markOrderAsDelivered(orderId);
+        return ResponseEntity.ok(Collections.singletonMap("message", "Order marked as delivered successfully"));
+    }
+
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @GetMapping("/markOrderAsShipped/{orderId}")
+    public ResponseEntity<?> markOrderAsShipped(@PathVariable Long orderId) {
+        orderDetailsService.markOrderAsShipped(orderId);
+        return ResponseEntity.ok(Collections.singletonMap("message", "Order marked as Shipped successfully"));
+    }
 }

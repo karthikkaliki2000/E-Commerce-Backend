@@ -11,4 +11,6 @@ import java.util.List;
 @Repository
 public interface OrderDetailsDao extends JpaRepository<OrderDetails,Long> {
     List<OrderDetails> findByUser(User user);
+    List<OrderDetails> findByUserAndOrderStatusIgnoreCase(User user, String orderStatus);
+    List<OrderDetails> findByOrderStatusIgnoreCase(String orderStatus);
 }

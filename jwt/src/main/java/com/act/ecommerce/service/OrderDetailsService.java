@@ -27,9 +27,6 @@ public class OrderDetailsService {
     @Autowired private CartDao cartDao;
     @Autowired private JwtRequestFilter jwtRequestFilter;
 
-    /**
-     * Places an order for one or more products.
-     */
     @Transactional
     public void placeOrder(OrderRequest orderRequest, boolean isSingleProductCheckout) {
         validateOrderRequest(orderRequest);
@@ -121,6 +118,26 @@ public class OrderDetailsService {
         return orders.stream().map(this::mapToOrderResponse).collect(Collectors.toList());
     }
 
+    // NEW: Filter user orders by status
+    public List<OrderResponse> getOrderHistoryByStatus(String status) {
+        String currentUser = jwtRequestFilter.CURRENT_USER;
+        User user = userDao.findById(currentUser)
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+        List<OrderDetails> orders = orderDetailsDao.findByUserAndOrderStatusIgnoreCase(user, status);
+        return orders.stream().map(this::mapToOrderResponse).collect(Collectors.toList());
+    }
+
+    // NEW: Filter all orders (admin) by status
+    public List<OrderResponse> getAllOrdersByStatus(String status) {
+        List<OrderDetails> orders = orderDetailsDao.findByOrderStatusIgnoreCase(status);
+        if (orders.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return orders.stream()
+                .map(this::mapToOrderResponse)
+                .collect(Collectors.toList());
+    }
+
     private OrderResponse mapToOrderResponse(OrderDetails order) {
         List<ProductSummary> productSummaries = order.getItems().stream()
                 .map(item -> new ProductSummary(
@@ -141,7 +158,7 @@ public class OrderDetailsService {
                 order.getOrderStatus(),
                 order.getOrderTotalPrice(),
                 order.getCreatedAt(),
-                productSummaries // <-- THIS should be a non-empty list
+                productSummaries
         );
     }
 
@@ -165,7 +182,6 @@ public class OrderDetailsService {
         return val == null || val.trim().isEmpty();
     }
 
-
     public void cancelOrder(Long orderId) {
         OrderDetails order = orderDetailsDao.findById(orderId)
                 .orElseThrow(() -> new EntityNotFoundException("Order not found"));
@@ -184,5 +200,31 @@ public class OrderDetailsService {
         return orders.stream()
                 .map(this::mapToOrderResponse)
                 .collect(Collectors.toList());
+    }
+
+    public void markOrderAsDelivered(Long orderId) {
+        OrderDetails order = orderDetailsDao.findById(orderId)
+                .orElseThrow(() -> new EntityNotFoundException("Order not found: " + orderId));
+
+        if (!order.getOrderStatus().toLowerCase().equals("order shipped")) {
+            throw new IllegalStateException("Only orders with status Shipped can be marked as DELIVERED");
+        }
+        order.setOrderStatus("Order Delivered");
+        orderDetailsDao.save(order);
+        logger.info("Order with ID {} marked as delivered", orderId);
+
+    }
+
+    public void markOrderAsShipped(Long orderId) {
+        OrderDetails order = orderDetailsDao.findById(orderId)
+                .orElseThrow(() -> new EntityNotFoundException("Order not found: " + orderId));
+
+        if (!order.getOrderStatus().toLowerCase().equals("order placed")) {
+            throw new IllegalStateException("Only orders with status PLACED can be marked as Shipped");
+        }
+        order.setOrderStatus("Order Shipped");
+        orderDetailsDao.save(order);
+        logger.info("Order with ID {} marked as Shipped", orderId);
+
     }
 }
