@@ -6,7 +6,11 @@ import com.act.ecommerce.dao.OrderDetailsDao;
 import com.act.ecommerce.dao.ProductDao;
 import com.act.ecommerce.dao.UserDao;
 import com.act.ecommerce.entity.*;
+import com.razorpay.Order;
+import com.razorpay.RazorpayClient;
+import com.razorpay.RazorpayException;
 import jakarta.persistence.EntityNotFoundException;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +30,11 @@ public class OrderDetailsService {
     @Autowired private UserDao userDao;
     @Autowired private CartDao cartDao;
     @Autowired private JwtRequestFilter jwtRequestFilter;
+
+    private static final String KEY = "rzp_test_MjZq8nDcmERok2";
+    private static final String KEY_SECRET = "SnFW82FfPQkz8bb8EFf38mMj";
+    private static final String CURRENCY = "INR";
+
 
     @Transactional
     public void placeOrder(OrderRequest orderRequest, boolean isSingleProductCheckout) {
@@ -70,7 +79,8 @@ public class OrderDetailsService {
                 "Order Placed",
                 totalOrderPrice,
                 productList,
-                user
+                user,
+                orderRequest.getTransactionId()
         );
         order.setItems(orderItems);
         orderItems.forEach(item -> item.setOrder(order));
@@ -227,4 +237,48 @@ public class OrderDetailsService {
         logger.info("Order with ID {} marked as Shipped", orderId);
 
     }
+
+    public TransactionDetails createTransaction(Double amount) {
+        String currentUser = jwtRequestFilter.CURRENT_USER;
+        if (currentUser == null || currentUser.isBlank()) {
+            throw new IllegalArgumentException("User not authenticated");
+        }
+
+        User user = userDao.findById(currentUser)
+                .orElseThrow(() -> new EntityNotFoundException("User not found: " + currentUser));
+
+        try {
+            Map<String, Object> orderOptions = new HashMap<>();
+            orderOptions.put("amount", (int) (amount * 100)); // Razorpay expects amount in paise
+            orderOptions.put("currency", CURRENCY);
+            orderOptions.put("receipt", "receipt#" + System.currentTimeMillis());
+
+
+
+            RazorpayClient razorpayClient = new RazorpayClient(KEY, KEY_SECRET);
+            Order razorPayOrder = razorpayClient.orders.create(new JSONObject(orderOptions));
+
+            logger.info("Razorpay Order: {}", razorPayOrder.toString());
+            logger.info("Transaction created successfully for user: {} with amount: {}", currentUser, amount);
+
+            return prepareTransactionDetails(razorPayOrder);
+
+        } catch (RazorpayException e) {
+            logger.error("Error creating Razorpay order: {}", e.getMessage(), e);
+            throw new RuntimeException("Failed to create transaction", e);
+        }
+    }
+    private TransactionDetails prepareTransactionDetails(Order order) {
+        String orderId = order.get("id");
+        String currency = order.get("currency");
+        int amount = order.get("amount");
+        String status = order.get("status");
+        String receipt = order.get("receipt");
+
+
+
+        return new TransactionDetails(orderId, currency, amount, status, receipt,KEY);
+    }
+
+
 }

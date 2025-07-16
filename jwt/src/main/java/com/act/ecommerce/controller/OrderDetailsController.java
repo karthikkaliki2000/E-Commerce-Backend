@@ -2,6 +2,7 @@ package com.act.ecommerce.controller;
 
 import com.act.ecommerce.entity.OrderRequest;
 import com.act.ecommerce.entity.OrderResponse;
+import com.act.ecommerce.entity.TransactionDetails;
 import com.act.ecommerce.service.OrderDetailsService;
 import jakarta.persistence.EntityNotFoundException;
 import org.slf4j.Logger;
@@ -131,5 +132,13 @@ public class OrderDetailsController {
     public ResponseEntity<?> markOrderAsShipped(@PathVariable Long orderId) {
         orderDetailsService.markOrderAsShipped(orderId);
         return ResponseEntity.ok(Collections.singletonMap("message", "Order marked as Shipped successfully"));
+    }
+
+    @PreAuthorize("hasRole('ROLE_USER')")
+    @GetMapping("/create/transaction/{amount}")
+    public TransactionDetails createTransaction(@PathVariable(name = "amount") Double amount) {
+
+        return orderDetailsService.createTransaction(amount);
+
     }
 }

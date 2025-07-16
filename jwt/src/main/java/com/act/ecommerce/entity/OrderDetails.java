@@ -36,21 +36,34 @@ public class OrderDetails {
     @JoinColumn(name = "user_user_name")
     private User user;
 
+    private String transactionId;
+
+    public String getTransactionId() {
+        return transactionId;
+    }
+    public void setTransactionId(String transactionId) {
+        this.transactionId = transactionId;
+    }
+
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    public OrderDetails(String fullName, String fullAddress, String email, String contactNumber, String alternativeContactNumber, String placed, double totalOrderPrice, User user) {
-        this.orderFullName = fullName;
-        this.orderFullAddress = fullAddress;
-        this.orderEmail = email;
-        this.orderPhoneNumber = contactNumber;
-        this.orderAlternativePhoneNumber = alternativeContactNumber;
-        this.orderStatus = placed;
-        this.orderTotalPrice = totalOrderPrice;
+    public OrderDetails(String orderFullName, String orderFullAddress, String orderEmail,
+                        String orderPhoneNumber, String orderAlternativePhoneNumber, String orderStatus,
+                        Double orderTotalPrice, List<Product> products, User user, String transactionId) {
+        this.orderFullName = orderFullName;
+        this.orderFullAddress = orderFullAddress;
+        this.orderEmail = orderEmail;
+        this.orderPhoneNumber = orderPhoneNumber;
+        this.orderAlternativePhoneNumber = orderAlternativePhoneNumber;
+        this.orderStatus = orderStatus;
+        this.orderTotalPrice = orderTotalPrice;
+        this.products = products;
         this.user = user;
+        this.transactionId = transactionId;
     }
 
     @PrePersist

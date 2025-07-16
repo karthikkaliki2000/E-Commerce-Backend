@@ -10,6 +10,7 @@ public class OrderRequest {
     private String contactNumber;
     private String alternativeContactNumber;
     private String email;
+    private String transactionId;
     private List<OrderProductQuantity> orderProductQuantities;
 
     // Constructors
@@ -26,7 +27,21 @@ public class OrderRequest {
         this.orderProductQuantities = orderProductQuantities;
     }
 
+    public OrderRequest(String fullName, String fullAddress, String contactNumber,
+                        String alternativeContactNumber, String email,
+                        List<OrderProductQuantity> orderProductQuantities, String transactionId) {
+        this(fullName, fullAddress, contactNumber, alternativeContactNumber, email, orderProductQuantities);
+        this.transactionId = transactionId;
+    }
+
     // Getters and Setters
+
+    public String getTransactionId() {
+        return transactionId;
+    }
+    public void setTransactionId(String transactionId) {
+        this.transactionId = transactionId;
+    }
     public String getFullName() {
         return fullName;
     }
@@ -88,18 +103,7 @@ public class OrderRequest {
                 '}';
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof OrderRequest)) return false;
-        OrderRequest that = (OrderRequest) o;
-        return Objects.equals(fullName, that.fullName) &&
-                Objects.equals(fullAddress, that.fullAddress) &&
-                Objects.equals(contactNumber, that.contactNumber) &&
-                Objects.equals(alternativeContactNumber, that.alternativeContactNumber) &&
-                Objects.equals(email, that.email) &&
-                Objects.equals(orderProductQuantities, that.orderProductQuantities);
-    }
+
 
     @Override
     public int hashCode() {
