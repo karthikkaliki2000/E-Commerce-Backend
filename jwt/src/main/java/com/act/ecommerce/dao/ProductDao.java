@@ -14,4 +14,5 @@ public interface ProductDao extends JpaRepository<Product, Long> {
          String name, String description, Pageable pageable);
 
 
+    boolean existsByProductName(String productName);
 }

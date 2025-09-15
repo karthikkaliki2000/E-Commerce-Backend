@@ -2,6 +2,8 @@ package com.act.ecommerce.entity;
 
 import jakarta.persistence.*;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Table(name="image_model")
 public class ImageModel {
@@ -59,5 +61,13 @@ public class ImageModel {
                 ", picBytes=" + (picBytes != null ? picBytes.length : 0) +
                 '}';
     }
+    @Column(name = "uploaded_at", updatable = false)
+    private LocalDateTime uploadedAt;
+
+    @PrePersist
+    protected void onUpload() {
+        uploadedAt = LocalDateTime.now();
+    }
+
 
 }

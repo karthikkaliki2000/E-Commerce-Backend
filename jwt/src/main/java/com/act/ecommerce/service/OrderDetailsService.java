@@ -1,6 +1,7 @@
 package com.act.ecommerce.service;
 
 import com.act.ecommerce.configuration.JwtRequestFilter;
+import com.act.ecommerce.constants.OrderStatusConstants;
 import com.act.ecommerce.dao.CartDao;
 import com.act.ecommerce.dao.OrderDetailsDao;
 import com.act.ecommerce.dao.ProductDao;
@@ -14,9 +15,11 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -76,7 +79,7 @@ public class OrderDetailsService {
                 orderRequest.getEmail(),
                 orderRequest.getContactNumber(),
                 orderRequest.getAlternativeContactNumber(),
-                "Order Placed",
+                OrderStatusConstants.ORDER_PLACED,
                 totalOrderPrice,
                 productList,
                 user,
@@ -95,6 +98,7 @@ public class OrderDetailsService {
 
         logger.info("Order placed with {} items by '{}'. Order ID: {}", productQuantityList.size(), currentUser, order.getOrderId());
     }
+
 
     private void clearCheckedOutItemsFromCart(User user, List<OrderProductQuantity> items) {
         items.forEach(item -> {
@@ -195,11 +199,14 @@ public class OrderDetailsService {
     public void cancelOrder(Long orderId) {
         OrderDetails order = orderDetailsDao.findById(orderId)
                 .orElseThrow(() -> new EntityNotFoundException("Order not found"));
-        if (!order.getOrderStatus().toLowerCase().equals("order placed")) {
+
+        if (!OrderStatusConstants.ORDER_PLACED.equalsIgnoreCase(order.getOrderStatus())) {
             throw new IllegalStateException("Only orders with status PLACED can be cancelled");
         }
-        order.setOrderStatus("Order Cancelled");
+
+        order.setOrderStatus(OrderStatusConstants.ORDER_CANCELLED);
         orderDetailsDao.save(order);
+        logger.info("Order with ID {} cancelled", orderId);
     }
 
     public List<OrderResponse> getAllOrders() {
@@ -216,27 +223,28 @@ public class OrderDetailsService {
         OrderDetails order = orderDetailsDao.findById(orderId)
                 .orElseThrow(() -> new EntityNotFoundException("Order not found: " + orderId));
 
-        if (!order.getOrderStatus().toLowerCase().equals("order shipped")) {
-            throw new IllegalStateException("Only orders with status Shipped can be marked as DELIVERED");
+        if (!OrderStatusConstants.ORDER_SHIPPED.equalsIgnoreCase(order.getOrderStatus())) {
+            throw new IllegalStateException("Only orders with status SHIPPED can be marked as DELIVERED");
         }
-        order.setOrderStatus("Order Delivered");
-        orderDetailsDao.save(order);
-        logger.info("Order with ID {} marked as delivered", orderId);
 
+        order.setOrderStatus(OrderStatusConstants.ORDER_DELIVERED);
+        orderDetailsDao.save(order);
+        logger.info("Order with ID {} marked as Delivered", orderId);
     }
 
     public void markOrderAsShipped(Long orderId) {
         OrderDetails order = orderDetailsDao.findById(orderId)
                 .orElseThrow(() -> new EntityNotFoundException("Order not found: " + orderId));
 
-        if (!order.getOrderStatus().toLowerCase().equals("order placed")) {
+        if (!OrderStatusConstants.ORDER_PLACED.equalsIgnoreCase(order.getOrderStatus())) {
             throw new IllegalStateException("Only orders with status PLACED can be marked as Shipped");
         }
-        order.setOrderStatus("Order Shipped");
+
+        order.setOrderStatus(OrderStatusConstants.ORDER_SHIPPED);
         orderDetailsDao.save(order);
         logger.info("Order with ID {} marked as Shipped", orderId);
-
     }
+
 
     public TransactionDetails createTransaction(Double amount) {
         String currentUser = jwtRequestFilter.CURRENT_USER;
@@ -278,6 +286,61 @@ public class OrderDetailsService {
 
 
         return new TransactionDetails(orderId, currency, amount, status, receipt,KEY);
+    }
+
+
+//    @Scheduled(initialDelay = 10000,fixedRate = 10000)
+@Scheduled(cron = "0 */5 * * * *") // Every 5 minute
+public void processPlacedOrdersForShipping() {
+    List<OrderDetails> placedOrders = orderDetailsDao.findByOrderStatus("Order Placed");
+
+    if (placedOrders.isEmpty()) {
+        logger.info("No 'Order Placed' orders found at {}", LocalDateTime.now());
+        return;
+    }
+
+    placedOrders.forEach(order -> {
+        try {
+            if ("Order Placed".equalsIgnoreCase(order.getOrderStatus())) {
+                order.setOrderStatus("Order Shipped");
+                orderDetailsDao.save(order);
+                logger.info("Order ID {} marked as 'Order Shipped'", order.getOrderId());
+            } else {
+                logger.warn("Order ID {} skipped: current status is '{}'", order.getOrderId(), order.getOrderStatus());
+            }
+        } catch (Exception e) {
+            logger.error("Error updating order ID {}: {}", order.getOrderId(), e.getMessage(), e);
+        }
+    });
+
+    logger.info("Shipping task completed. Total processed: {}", placedOrders.size());
+}
+
+
+    @Scheduled(cron = "0 */10 * * * *") // Every 10 minutes
+    public void processShippedOrdersForDelivery() {
+        List<OrderDetails> shippedOrders = orderDetailsDao.findByOrderStatus("Order Shipped");
+
+        if (shippedOrders.isEmpty()) {
+            logger.info("No 'Order Shipped' orders found at {}", LocalDateTime.now());
+            return;
+        }
+
+        shippedOrders.forEach(order -> {
+            try {
+                if ("Order Shipped".equalsIgnoreCase(order.getOrderStatus())) {
+                    order.setOrderStatus("Order Delivered");
+                    orderDetailsDao.save(order);
+                    logger.info("Order ID {} marked as 'Order Delivered'", order.getOrderId());
+                } else {
+                    logger.warn("Order ID {} skipped: current status is '{}'", order.getOrderId(), order.getOrderStatus());
+                }
+            } catch (Exception e) {
+                logger.error("Error delivering order ID {}: {}", order.getOrderId(), e.getMessage(), e);
+            }
+        });
+
+        logger.info("Delivery task completed. Total processed: {}", shippedOrders.size());
     }
 
 

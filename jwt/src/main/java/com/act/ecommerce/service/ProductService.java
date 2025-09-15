@@ -14,6 +14,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -53,12 +54,18 @@ public class ProductService {
 
 
     public Product addNewProduct(Product product) {
-        // Logic to add a new product
-        // This could involve saving the product to a database, etc.
+        product.setProductName(product.getProductName().trim());
+        product.setCreatedAt(LocalDateTime.now());
+
+
+        if (productDao.existsByProductName(product.getProductName())) {
+            throw new IllegalArgumentException("Product with this name already exists");
+        }
+
+        logger.info("Saving product: {}", product.getProductName());
         return productDao.save(product);
-
-
     }
+
 
     public List<Product> getAllProducts(int pageNumber, int pageSize, String searchKey) {
         Pageable pageable = PageRequest.of(pageNumber, pageSize);
