@@ -14,7 +14,7 @@ public class CorsConfiguration {
     private static final String POST = "POST";
     private static final String PUT = "PUT";
     private static final String DELETE = "DELETE";
-
+    private static final String PATCH = "PATCH";
 
     @Bean
     public WebMvcConfigurer corsConfigurer() {
@@ -23,7 +23,7 @@ public class CorsConfiguration {
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**")
                         .allowedOriginPatterns("http://localhost:4200", "https://your-production-domain.com") // Specify allowed origins
-                        .allowedMethods("GET", "POST", "PUT", "DELETE")
+                        .allowedMethods("GET", "POST", "PUT", "DELETE","PATCH")
                         .allowedHeaders("*")
                         .allowCredentials(true);
 

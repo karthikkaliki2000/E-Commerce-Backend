@@ -60,6 +60,7 @@ public class ProductController {
         return imageModels;
     }
 
+
     @GetMapping("/product/all")
     public List<Product> getAllProducts(
             @RequestParam(defaultValue = "0") int pageNumber,

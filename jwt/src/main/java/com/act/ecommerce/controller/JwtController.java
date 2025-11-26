@@ -20,6 +20,7 @@ public class JwtController {
         // This method is used to create a JWT token
         // The actual implementation of token creation is not shown here
         // You would typically call a service method to generate the token
+
         return jwtService.createToken(jwtRequest);
     }
 

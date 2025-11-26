@@ -1,13 +1,14 @@
 package com.act.ecommerce.schedulers;
 
-import com.act.ecommerce.dao.ScheduleConfigRepository;
-import com.act.ecommerce.entity.ScheduleConfig;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.support.CronTrigger;
+import org.springframework.scheduling.support.CronExpression;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
+import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
@@ -15,77 +16,96 @@ import java.util.concurrent.ScheduledFuture;
 @Service
 public class DynamicSchedulerService {
 
-    @Autowired
-    private ScheduleConfigRepository scheduleConfigRepository;
+    private static final Logger logger = LoggerFactory.getLogger(DynamicSchedulerService.class);
 
-    @Autowired
-    private OrderScheduler orderScheduler;
+    private final TaskScheduler taskScheduler;
 
-    private final ThreadPoolTaskScheduler taskScheduler = new ThreadPoolTaskScheduler();
-
+    // Map to hold task references
     private final Map<String, ScheduledFuture<?>> scheduledTasks = new ConcurrentHashMap<>();
 
-    public DynamicSchedulerService() {
-        taskScheduler.setPoolSize(5); // Adjust based on expected concurrency
-        taskScheduler.setThreadNamePrefix("DynamicScheduler-");
-        taskScheduler.initialize();
+    // Map to hold cron expressions for restart
+    private final Map<String, String> taskCrons = new ConcurrentHashMap<>();
+
+    public DynamicSchedulerService(TaskScheduler taskScheduler) {
+        this.taskScheduler = taskScheduler;
     }
 
+    /**
+     * Initialize all tasks on startup
+     */
     @PostConstruct
     public void initializeAllTasks() {
-        scheduleConfigRepository.findAll().forEach(config -> {
-            restartScheduledTask(config.getTaskName(), config.getCronExpression());
+        logger.info("Initializing scheduled tasks...");
+        taskCrons.forEach((taskName, cron) -> {
+            try {
+                restartScheduledTask(taskName, cron);
+            } catch (Exception e) {
+                logger.error("Failed to initialize task '{}': {}", taskName, e.getMessage());
+            }
         });
     }
 
-    public void updateCronExpression(String taskName, String newCron) {
-        ScheduleConfig config = scheduleConfigRepository.findByTaskName(taskName)
-                .orElse(new ScheduleConfig());
-        config.setTaskName(taskName);
-        config.setCronExpression(newCron);
-        scheduleConfigRepository.save(config);
-
-        restartScheduledTask(taskName, newCron);
+    /**
+     * Update cron expression for a task
+     */
+    public void updateCronExpression(String taskName, String cronExpression) {
+        validateCron(cronExpression);
+        stopTask(taskName);
+        taskCrons.put(taskName, cronExpression);
+        restartScheduledTask(taskName, cronExpression);
+        logger.info("Cron updated for task '{}': {}", taskName, cronExpression);
     }
 
-    private void restartScheduledTask(String taskName, String cronExpression) {
-        ScheduledFuture<?> existingTask = scheduledTasks.get(taskName);
-        if (existingTask != null) {
-            existingTask.cancel(false);
-        }
-
-        Runnable taskRunnable = getRunnableForTask(taskName);
-        if (taskRunnable == null) {
-            throw new IllegalArgumentException("No runnable found for task: " + taskName);
-        }
-
-        ScheduledFuture<?> newTask = taskScheduler.schedule(taskRunnable, new CronTrigger(cronExpression));
-        scheduledTasks.put(taskName, newTask);
-    }
-
-    private Runnable getRunnableForTask(String taskName) {
-        switch (taskName) {
-            case "order-shipping":
-                return orderScheduler::processPlacedOrdersForShipping;
-            case "order-delivery":
-                return orderScheduler::processShippedOrdersForDelivery;
-//            case "email-reminder":
-//                return orderScheduler::sendPendingEmailReminders;
-            // Add more cases as needed
-            default:
-                return null;
-        }
-    }
-
+    /**
+     * Stop a scheduled task
+     */
     public void stopTask(String taskName) {
-        ScheduledFuture<?> task = scheduledTasks.remove(taskName);
-        if (task != null) {
-            task.cancel(false);
+        ScheduledFuture<?> future = scheduledTasks.remove(taskName);
+        if (future != null) {
+            future.cancel(false);
+            logger.info("Task '{}' stopped.", taskName);
+        } else {
+            logger.warn("No active task found to stop: '{}'", taskName);
         }
     }
 
+    /**
+     * Check if a task is currently running
+     */
     public boolean isTaskRunning(String taskName) {
-        ScheduledFuture<?> task = scheduledTasks.get(taskName);
-        return task != null && !task.isCancelled();
+        ScheduledFuture<?> future = scheduledTasks.get(taskName);
+        return future != null && !future.isCancelled();
     }
+
+    /**
+     * Restart a scheduled task with new cron
+     */
+    public void restartScheduledTask(String taskName, String cronExpression) {
+        validateCron(cronExpression);
+        Runnable task = getRunnableForTask(taskName);
+        CronTrigger trigger = new CronTrigger(cronExpression);
+        ScheduledFuture<?> future = taskScheduler.schedule(task, trigger);
+        scheduledTasks.put(taskName, future);
+        logger.info("Task '{}' scheduled with cron '{}'", taskName, cronExpression);
+    }
+
+    /**
+     * Validate cron expression
+     */
+    private void validateCron(String cronExpression) {
+        CronExpression.parse(cronExpression); // throws IllegalArgumentException if invalid
+    }
+
+    /**
+     * Provide task logic based on task name
+     */
+    private Runnable getRunnableForTask(String taskName) {
+        // Replace with actual logic per task
+        return () -> logger.info("Executing task '{}'", taskName);
+    }
+
+    public Map<String, String> getAllCronExpressions() {
+        return Collections.unmodifiableMap(taskCrons);
+    }
+
 }
