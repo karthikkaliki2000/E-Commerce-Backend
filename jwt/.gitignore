@@ -35,4 +35,6 @@ build/
 ###Log files
 logs/*.log
 
+jwt/mysql_data_backup.tar
+
 
