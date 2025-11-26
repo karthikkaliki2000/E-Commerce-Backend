@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: ecommerce-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: Karthik@123
+      MYSQL_DATABASE: e_commerce
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - ecommerce-net
+
+  ecommerce-backend:
+    image: karthikkaliki/ecommerce_backend:v1
+    container_name: ecommerce-backend
+    restart: always
+    depends_on:
+      - mysql
+      - ollama
+    ports:
+      - "9090:9090"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/e_commerce
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: Karthik@123
+      # Point Spring AI to Ollama service inside Docker
+      SPRING_AI_OLLAMA_BASE_URL: http://ollama:11434
+      SPRING_AI_OLLAMA_CHAT_OPTIONS_MODEL: gemma:2b
+      SPRING_AI_OLLAMA_CHAT_ENABLED: "true"
+      SPRING_AI_OLLAMA_CHAT_OPTIONS_TEMPERATURE: 0.1
+    networks:
+      - ecommerce-net
+
+  ecommerce-frontend:
+    image: karthikkaliki/ecommerce_frontend:v1
+    container_name: ecommerce-frontend
+    restart: always
+    ports:
+      - "4200:80"
+    networks:
+      - ecommerce-net
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    restart: always
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - ecommerce-net
+
+volumes:
+  mysql_data:
+  ollama_data:
+
+networks:
+  ecommerce-net:
+    driver: bridge
