@@ -37,44 +37,9 @@
          - Use 'CHAT' only for general small talk or policy questions that do not require database lookup.
 
          Ambiguous product/price/availability/count/list queries MUST be classified as 'SQL'.
-        
+
          *** OUTPUT ONLY THE CLASSIFICATION WORD (SQL or CHAT) AND NOTHING ELSE. ***
          """;
-//     private static final String SQL_PROMPT= """
-//             Hi, you are an ecommerce bot. You will write SQL queries to read the data and respond to customer queries related to their questions.
-//             Write a SQL query using SQLITE3 to get rows from tables. The tables have the following list of columns:
-//             CATALOG SCHEMA (use EXACT column names below):
-//             Table: product
-//             Columns:
-//             product_id bigint AI PK
-//             created_at datetime(6)
-//             product_actual_price double
-//             product_description varchar(2000)
-//             product_discounted_price double
-//             product_name varchar(255)
-//             updated_at datetime(6)
-//             Table: order_item
-//             Columns:
-//             id bigint AI PK
-//             quantity int
-//             unit_price double
-//             order_order_id bigint
-//             product_product_id bigint
-//             Table: order_products
-//             Columns:
-//             order_id bigint
-//             product_id bigint
-//             Table: product
-//             Columns:
-//             product_id bigint AI PK
-//             created_at datetime(6)
-//             product_actual_price double
-//             product_description varchar(2000)
-//             product_discounted_price double
-//             product_name varchar(255)
-//             updated_at datetime(6)
-//             While responding, only return the raw query statement. Response should be plain text, do not format it (e.g., select * from table_name).
-//             If you're not able to query, respond with 'NO_SQL_QUERY'. {user_query}""";
 
      // --- 2. SQL Generation Prompt (STRICT CODE ONLY) ---
      private static final String SQL_PROMPT = """
@@ -461,3 +426,4 @@ Note: Remember only provide raw sql query no other texts
          }
      }
  }
+

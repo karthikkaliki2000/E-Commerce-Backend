@@ -1,6 +1,27 @@
 version: '3.8'
 
 services:
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9091:9090"   # map container’s 9090 to host’s 9091
+    networks:
+      - ecommerce-net
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana  # Good to add for easy logging
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    networks:
+      - ecommerce-net    # <--- Change this from ecommerce-network to ecommerce-net
+
+
   mysql:
     image: mysql:8.0
     container_name: ecommerce-mysql
@@ -28,7 +49,6 @@ services:
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/e_commerce
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: Karthik@123
-      # Point Spring AI to Ollama service inside Docker
       SPRING_AI_OLLAMA_BASE_URL: http://ollama:11434
       SPRING_AI_OLLAMA_CHAT_OPTIONS_MODEL: gemma:2b
       SPRING_AI_OLLAMA_CHAT_ENABLED: "true"
@@ -55,6 +75,9 @@ services:
       - ollama_data:/root/.ollama
     networks:
       - ecommerce-net
+    # --- ADD THESE TWO LINES FOR AUTOMATION ---
+    entrypoint: /bin/sh
+    command: -c "ollama serve & sleep 10 && ollama pull gemma:2b && wait"
 
 volumes:
   mysql_data:

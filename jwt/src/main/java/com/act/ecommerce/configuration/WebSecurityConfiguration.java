@@ -7,6 +7,7 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -15,12 +16,12 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity(prePostEnabled = true) // Enables role-based security annotations
+@EnableMethodSecurity(prePostEnabled = true)
 public class WebSecurityConfiguration {
 
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
-    private final JwtRequestFilter jwtRequestFilter;
     private final UserDetailsService jwtService;
+    private final JwtRequestFilter jwtRequestFilter;
 
     public WebSecurityConfiguration(JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint,
                                     JwtRequestFilter jwtRequestFilter,
@@ -32,22 +33,31 @@ public class WebSecurityConfiguration {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http.cors().and().csrf().disable()
+        http
+                .csrf(csrf -> csrf.disable())
+                .cors(org.springframework.security.config.Customizer.withDefaults())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/authenticate","/api/register","/product/all","/api/ollama/ask","/api/openrouter/ask","/product/{productId}").permitAll() // Allow registration & authentication
-//                        .requestMatchers("/api/forAdmin").hasRole("ADMIN") // Restrict to ROLE_ADMIN
-//                        .requestMatchers("/api/forUser").hasRole("USER") // Restrict to ROLE_USER
-                        .anyRequest().authenticated()) // Ensure all other requests require authentication
+                        // Allow actuator and error paths first
+                        .requestMatchers("/actuator/**").permitAll()
+                        .requestMatchers("/error").permitAll()
+                        .requestMatchers("/authenticate", "/api/register", "/product/all", "/product/{productId}").permitAll()
+                        .requestMatchers("/api/ollama/ask", "/api/openrouter/ask").permitAll()
+                        .anyRequest().authenticated()
+                )
                 .exceptionHandling(exception ->
-                        exception.authenticationEntryPoint(jwtAuthenticationEntryPoint))
+                        exception.authenticationEntryPoint(jwtAuthenticationEntryPoint)
+                )
                 .sessionManagement(session ->
-                        session.sessionCreationPolicy(org.springframework.security.config.http.SessionCreationPolicy.STATELESS));
+                        session.sessionCreationPolicy(org.springframework.security.config.http.SessionCreationPolicy.STATELESS)
+                );
 
         // Add the JWT request filter
         http.addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
+
+
 
     @Bean
     public PasswordEncoder passwordEncoder() {

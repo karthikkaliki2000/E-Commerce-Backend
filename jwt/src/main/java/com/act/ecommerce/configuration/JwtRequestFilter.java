@@ -33,6 +33,20 @@ public class JwtRequestFilter extends OncePerRequestFilter {
     @Lazy
     private JwtService jwtService;
 
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+        String path = request.getRequestURI();
+        // ADD THIS: Preflight requests don't have JWTs, so skip filtering them
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+            return true;
+        }
+
+        return path.startsWith("/actuator") ||
+                path.equals("/authenticate") ||
+                path.equals("/api/register");
+    }
+
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {

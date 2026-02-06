@@ -1,0 +1,14 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'spring-boot-app'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['ecommerce-backend:9090'] # Use the container name and internal port
+
+remote_write:
+  - url: https://prometheus-prod-43-prod-ap-south-1.grafana.net/api/prom/push
+    basic_auth:
+      username: 2844823  # Your numeric User ID from the screenshot
+      password: glc_eyJvIjoiMTYwOTM4NCIsIm4iOiJmYXJvLXJ1bS1rZXktZmFyby1ydW0ta2V5IiwiayI6IjE4TDA1YTRmbjJJOUIyeUhpZDUwdENIVCIsIm0iOnsiciI6InByb2QtYXAtc291dGgtMSJ9fQ==
